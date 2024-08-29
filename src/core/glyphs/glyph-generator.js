@@ -393,4 +393,134 @@ export const GlyphGenerator = {
   copy(glyph) {
     return glyph ? deepmerge({}, glyph) : glyph;
   },
+
+  effectLevelPeek(type, strength, rng) {
+    const random1 = rng.uniform();
+    const random2 = rng.uniform();
+
+    let peek = [1];
+    for (let i = 2; i <= 7; i++) {
+      peek.push(Math.ceil((100 * (1 - Math.log((i - 1) / 1.5) / Math.log(random1))) ** 2 / strength));
+      // This is a reverse formula of the effect count calculation.
+    }
+    if (RealityUpgrade(17).isBought && random2 < Effects.max(0, RealityUpgrade(17))) {
+      for (let i = 6; i >= 1; i--) {
+        peek[i] = peek[i - 1];
+      }
+      // Shift by 1 for an extra effect.
+    }
+    if (Ra.unlocks.glyphEffectCount.canBeApplied) {
+      for (let i = 0; i <= 3; i++) peek[i] = 1;
+    } else {
+      peek = peek.slice(0, 4);
+    }
+    if (type !== "effarig") {
+      peek = peek.slice(0, 4);
+    }
+    return peek;
+  },
+
+  effectOrderPeek(type, rng) {
+    const effectValues = GlyphTypes[type].effects.mapToObject(x => x.bitmaskIndex, () => rng.uniform());
+    Array.range(0, 7 - GlyphTypes[type].effects.length).forEach(() => rng.uniform());
+    if (type === "effarig") {
+      const unincluded = effectValues[20] < effectValues[21] ? 20 : 21;
+      effectValues[unincluded] = -1;
+    }
+    for (const i of [0, 12, 16]) {
+      if (i in effectValues) {
+        effectValues[i] = 2;
+      }
+    }
+    const effects = Object.keys(effectValues).sort((a, b) => effectValues[b] - effectValues[a]);
+    return effects.map(Number);
+  },
+
+  randomGlyphWithPeek(level, rngIn, typeIn = null) {
+    const rng = rngIn || new GlyphGenerator.RealGlyphRNG();
+    const strength = this.randomStrength(rng);
+    const type = typeIn || this.randomType(rng);
+    let effectLevel = this.effectLevelPeek(type, strength, rng);
+    if (type !== "effarig" && effectLevel.length > 4) effectLevel = effectLevel.slice(0, 4);
+    const effectOrder = this.effectOrderPeek(type, rng);
+    const effectBitmask = effectOrder.slice(0, effectLevel.countWhere(x => x <= level.actualLevel)).toBitmask();
+    let peekInfo = [];
+    for (let i = 0; i < effectLevel.length; i++) {
+      peekInfo.push({level: effectLevel[i], effect: effectOrder[i]});
+    }
+    return {
+      id: undefined,
+      idx: null,
+      type,
+      strength,
+      level: level.actualLevel,
+      rawLevel: level.rawLevel,
+      effects: effectBitmask,
+      peekInfo,
+    };
+  },
+
+  uniformGlyphsWithPeek(level, rng, realityCount) {
+    const groupNum = Math.floor((realityCount - 1) / 5);
+    const groupIndex = (realityCount - 1) % 5;
+
+    const initSeed = player.reality.initialSeed;
+    const typePerm = permutationIndex(5, (31 + initSeed % 7) * groupNum + initSeed % 1123);
+
+    const typePermIndex = Array.repeat(0, 5);
+    for (let i = 0; i < groupIndex; i++) {
+      for (let type = 0; type < 5; type++) {
+        if (type !== typePerm[i]) typePermIndex[type]++;
+      }
+    }
+
+    const uniformEffects = [];
+    const startID = [16, 12, 8, 0, 4];
+    const typesThisReality = Array.range(0, 5);
+    typesThisReality.splice(typePerm[groupIndex], 1);
+    for (let i = 0; i < 4; i++) {
+      const type = typesThisReality[i];
+      const effectPerm = permutationIndex(4, 5 * type + (7 + initSeed % 5) * groupNum + initSeed % 11);
+      uniformEffects.push(startID[type] + effectPerm[typePermIndex[type]]);
+    }
+
+    const glyphs = [];
+    for (let i = 0; i < 4; ++i) {
+      const newGlyph = GlyphGenerator.randomGlyphWithPeek(level, rng, BASIC_GLYPH_TYPES[typesThisReality[i]]);
+      if ((initSeed + realityCount + i) % 2 === 0) {
+        newGlyph.effects = (1 << uniformEffects[i]);
+        newGlyph.peekInfo = [{level: 1, effect: uniformEffects[i]}];
+      } else {
+        const newMask = newGlyph.effects | (1 << uniformEffects[i]);
+        newGlyph.peekInfo = [];
+
+        const maxEffects = RealityUpgrade(17).isBought ? 3 : 2;
+        if (countValuesFromBitmask(newMask) > maxEffects) {
+          const replacable = getGlyphEffectsFromBitmask(newGlyph.effects)
+            .filter(eff => eff.isGenerated)
+            .map(eff => eff.bitmaskIndex)
+            .filter(eff => ![0, 12, 16].includes(eff));
+          const toRemove = replacable[Math.abs(initSeed + realityCount) % replacable.length];
+          newGlyph.effects = newMask & ~(1 << toRemove);
+        } else {
+          newGlyph.effects = newMask;
+        }
+      }
+
+      const dimPowers = { power: 16, infinity: 12, time: 0 };
+      if (dimPowers[newGlyph.type] !== undefined) {
+        newGlyph.effects |= 1 << dimPowers[newGlyph.type];
+        if (newGlyph.peekInfo.length !== 0) {
+          if (newGlyph.peekInfo.find(x => x.effect === dimPowers[newGlyph.type]) === undefined) {
+            newGlyph.peekInfo.push({level: 1, effect: dimPowers[newGlyph.type]});
+          }
+          newGlyph.peekInfo.find(x => x.effect === dimPowers[newGlyph.type]).level = 1;
+        }
+      }
+
+      glyphs.push(newGlyph);
+    }
+
+    return glyphs;
+  },
 };

@@ -64,7 +64,12 @@ export default {
     changeWatcher: {
       type: Number,
       required: true
-    }
+    },
+    peekInfo: {
+      type: Array,
+      required: false,
+      default: [],
+    },
   },
   data() {
     return {
@@ -80,9 +85,16 @@ export default {
       return this.displayLevel ? this.displayLevel : this.level;
     },
     sortedEffects() {
-      return getGlyphEffectValuesFromBitmask(this.effects, this.effectiveLevel, this.strength, this.type)
-        .filter(effect =>
-          GlyphEffects[effect.id].isGenerated === generatedTypes.includes(this.type));
+      return this.peekInfo.length === 0
+        ? getGlyphEffectValuesFromBitmask(this.effects, this.effectiveLevel, this.strength, this.type)
+          .filter(effect => GlyphEffects[effect.id].isGenerated === generatedTypes.includes(this.type))
+        : this.peekInfo.map(info => {
+          let effect =
+            getGlyphEffectValuesFromBitmask(1 << info.effect, this.effectiveLevel, this.strength, this.type)
+            .filter(effect => GlyphEffects[effect.id].isGenerated === generatedTypes.includes(this.type))
+            [0];
+            return {...effect, level: info.level};
+          });
     },
     rarityInfo() {
       return getRarity(this.strength);
@@ -293,6 +305,7 @@ export default {
         :key="e.id + changeWatcher"
         :effect="e.id"
         :value="e.value"
+        :level="e.level"
       />
       <div
         v-if="showChaosText"

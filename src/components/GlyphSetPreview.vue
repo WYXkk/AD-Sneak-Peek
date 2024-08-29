@@ -62,6 +62,11 @@ export default {
       type: Boolean,
       required: false,
       default: true
+    },
+    showPeek: {
+      type: Boolean,
+      required: false,
+      default: false,
     }
   },
   data() {
@@ -143,6 +148,7 @@ export default {
         :text-proportion="0.5"
         glow-blur="0.2rem"
         glow-spread="0.1rem"
+        :show-peek="showPeek"
       />
     </span>
     <span v-else>

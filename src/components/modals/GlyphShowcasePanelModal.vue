@@ -58,7 +58,7 @@ export default {
   methods: {
     update() {
       this.glyphs = this.isGlyphSelection
-        ? GlyphSelection.glyphList(GlyphSelection.choiceCount, gainedGlyphLevel(), { isChoosingGlyph: false })
+        ? GlyphSelection.glyphListWithPeek(GlyphSelection.choiceCount, gainedGlyphLevel(), { isChoosingGlyph: false })
         : this.glyphSet.filter(x => x);
       this.sortGlyphs();
       this.gainedLevel = gainedGlyphLevel().actualLevel;
@@ -101,6 +101,7 @@ export default {
         :reality-glyph-boost="realityGlyphBoost"
         :max-glyph-effects="maxGlyphEffects"
         :show-sacrifice="displaySacrifice"
+        :show-peek="isGlyphSelection"
       />
     </div>
   </ModalWrapper>

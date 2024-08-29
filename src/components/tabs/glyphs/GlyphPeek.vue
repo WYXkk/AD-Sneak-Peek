@@ -33,7 +33,9 @@ export default {
     refreshGlyphs() {
       this.canRefresh = true;
       this.glyphs = GlyphSelection.upcomingGlyphs;
-      for (const glyph of this.glyphs) Glyphs.applyGamespeed(glyph);
+      // for (const glyph of this.glyphs) Glyphs.applyGamespeed(glyph);
+      // In all glyph previews, applyGamespeed only appear here.
+      // For simplicity in my mod, this is removed.
       this.level = gainedGlyphLevel().actualLevel;
     },
     showModal() {
@@ -67,6 +69,7 @@ export default {
         :show-sacrifice="canSacrifice"
         :flip-tooltip="true"
         :sort="false"
+        :show-peek="true"
       />
       (Click to bring up details)
     </div>

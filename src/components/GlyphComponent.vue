@@ -256,6 +256,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    showPeek: {
+      type: Boolean,
+      required: false,
+      default: false,
     }
   },
   data() {
@@ -488,6 +493,9 @@ export default {
     },
     showBorders() {
       return player.options.glyphBorders;
+    },
+    peekInfo() {
+      return this.showPeek && this.glyph.peekInfo ? this.glyph.peekInfo : [];
     }
   },
   watch: {
@@ -777,6 +785,7 @@ export default {
       :display-level="displayLevel"
       :component="componentID"
       :change-watcher="logTotalSacrifice"
+      :peek-info="peekInfo"
     />
     <div
       v-if="isNew"

@@ -31,6 +31,11 @@ export default {
       type: Boolean,
       required: true
     },
+    showPeek: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
   },
   data() {
     return {
@@ -89,21 +94,39 @@ export default {
         "font-weight": "bold"
       };
     },
+    actualHeight() {
+      if (!this.showPeek || this.glyph.peekInfo === undefined || this.glyph.peekInfo.length === 0) {
+        return this.maxGlyphEffects;
+      } else {
+        return this.glyph.peekInfo.length;
+      }
+    },
     effectStyle() {
       return {
         "font-size": `${this.type === "effarig" ? 1 : 1.2}rem`,
-        "height": this.glyphEffectListHeight(this.maxGlyphEffects)
+        "height": this.glyphEffectListHeight(this.actualHeight)
       };
     },
     glyphEffectList() {
       const db = GlyphEffects;
-      const effects =
-      getGlyphEffectValuesFromBitmask(this.glyph.effects, this.effectiveLevel, this.glyph.strength, this.type)
-        .filter(e => db[e.id].isGenerated === generatedTypes.includes(this.type));
-      const effectStrings = effects
-        .map(e => this.formatEffectString(db[e.id], e.value));
-      // Filter out undefined results since shortDesc only exists for generated effects
-      return effectStrings.filter(s => s !== "undefined");
+      if (!this.showPeek || this.glyph.peekInfo === undefined || this.glyph.peekInfo.length === 0) {
+        const effects =
+        getGlyphEffectValuesFromBitmask(this.glyph.effects, this.effectiveLevel, this.glyph.strength, this.type)
+          .filter(e => db[e.id].isGenerated === generatedTypes.includes(this.type));
+        const effectStrings = effects
+          .map(e => this.formatEffectString(db[e.id], e.value));
+        // Filter out undefined results since shortDesc only exists for generated effects
+        return effectStrings.filter(s => s !== "undefined");
+      } else {
+        const effectStrings = this.glyph.peekInfo.map(info => {
+          const effect = getGlyphEffectValuesFromBitmask(1 << info.effect, this.effectiveLevel, this.glyph.strength, this.type)
+          .filter(e => db[e.id].isGenerated === generatedTypes.includes(this.type))[0];
+          const str = this.formatEffectString(db[effect.id], effect.value);
+          str.text = `[Lv ${info.level}] ` + str.text;
+          return str;
+        });
+        return effectStrings.filter(s => s !== "undefined");
+      }
     },
     rarityPercent() {
       if (this.glyph.type === "companion" || this.glyph.type === "cursed") return "";
@@ -169,6 +192,7 @@ export default {
         :text-proportion="0.5"
         glow-blur="0.4rem"
         glow-spread="0.1rem"
+        :show-peek="showPeek"
         @clicked="clickGlyph(glyph)"
       />
       <div :style="rarityStyle">

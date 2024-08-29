@@ -101,10 +101,10 @@ export const GlyphSelection = {
   // this pre-selected glyph as the only option
   get upcomingGlyphs() {
     if (Perk.firstPerk.isEffectActive) {
-      return this.glyphList(this.choiceCount, gainedGlyphLevel(), { isChoosingGlyph: false });
+      return this.glyphListWithPeek(this.choiceCount, gainedGlyphLevel(), { isChoosingGlyph: false });
     }
 
-    const group = this.glyphList(4, gainedGlyphLevel(), { isChoosingGlyph: false });
+    const group = this.glyphListWithPeek(4, gainedGlyphLevel(), { isChoosingGlyph: false });
     return [group[this.indexWithoutSTART]];
   },
 
@@ -113,7 +113,27 @@ export const GlyphSelection = {
   get indexWithoutSTART() {
     const lexIndex = player.realities * ((player.reality.initialSeed % 5) + 3);
     return permutationIndex(4, lexIndex)[0];
-  }
+  },
+
+  glyphListWithPeek(countIn, level, config) {
+    const count = Math.clampMin(countIn, 4);
+    let glyphList = [];
+    const rng = config.rng || new GlyphGenerator.RealGlyphRNG();
+    const types = [];
+    if (GlyphGenerator.isUniformityActive) {
+      glyphList = GlyphGenerator.uniformGlyphsWithPeek(level, rng, player.realities);
+    } else {
+      for (let out = 0; out < count; ++out) {
+        types.push(GlyphGenerator.randomType(rng, types));
+      }
+      for (let out = 0; out < count; ++out) {
+        glyphList.push(GlyphGenerator.randomGlyphWithPeek(level, rng, types[out]));
+      }
+    }
+    this.glyphUncommonGuarantee(glyphList, rng);
+    glyphList = glyphList.slice(0, countIn);
+    return glyphList;
+  },
 };
 
 export function isRealityAvailable() {

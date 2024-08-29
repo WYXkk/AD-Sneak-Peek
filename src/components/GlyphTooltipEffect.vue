@@ -9,6 +9,11 @@ export default {
     value: {
       type: [Number, Object],
       required: true
+    },
+    level: {
+      type: Number,
+      required: false,
+      default: 0
     }
   },
   computed: {
@@ -69,6 +74,9 @@ export default {
     textShadowColor() {
       return GlyphAppearanceHandler.getBaseColor(true);
     },
+    levelText() {
+      return this.level === 0 ? "" : `[Unlocked at level ${this.level}]<br>`;
+    }
   },
   methods: {
     convertToHTML(string) {
@@ -91,6 +99,7 @@ export default {
     class="c-glyph-tooltip__effect"
     :class="{ 'o-pelle-disabled': isPelleDisabled }"
   >
+    <span v-html="levelText" />
     <span v-html="convertedParts[0]" />
     <!-- Do not "fix" the spacing on these spans; moving effectText to its own line causes extra spaces to appear -->
     <span

@@ -99,7 +99,7 @@ export default {
       if (this.firstReality) return;
       for (let i = 0; i < this.glyphs.length; ++i) {
         const currentGlyph = this.glyphs[i];
-        const newGlyph = GlyphSelection.glyphList(
+        const newGlyph = GlyphSelection.glyphListWithPeek(
           GlyphSelection.choiceCount, gainedGlyphLevel(), { isChoosingGlyph: false }
         )[i];
         if (currentGlyph.level === newGlyph.level) continue;
@@ -165,6 +165,7 @@ export default {
         :is-in-modal="true"
         :ignore-modified-level="true"
         :show-sacrifice="canSacrifice"
+        :show-peek="true"
         @click.native="select(index)"
       />
     </div>
